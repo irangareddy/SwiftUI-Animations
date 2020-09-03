@@ -7,35 +7,52 @@
 
 import SwiftUI
 
+
+// MARK:- Custom transitions using ViewModifier
+
+struct CornerRotateModifier: ViewModifier {
+    let amount: Double
+    let anchor: UnitPoint
+    
+    func body(content: Content) -> some View {
+        content.rotationEffect(.degrees(amount), anchor: anchor)
+            .clipShape(Circle())
+    }
+}
+
+extension AnyTransition {
+    static var pivot: AnyTransition {
+        .modifier(active: CornerRotateModifier(amount: -90, anchor: .bottomTrailing), identity: CornerRotateModifier(amount: 0, anchor: .bottomTrailing))
+    }
+}
+
 struct ContentView: View {
     
-    @State private var animationAmount: CGFloat = 1
-    @State private var status: Bool = false
+    @State private var enabled = false
+    @State private var onTouchId = false
     
     var body: some View {
         
-        ZStack {
-            Color(#colorLiteral(red: 0.1999762356, green: 0.200016588, blue: 0.1999709308, alpha: 1))
-                .edgesIgnoringSafeArea(.all)
-            VStack {
-                Button(action: {
-                    withAnimation(.interpolatingSpring(stiffness: 15, damping: 10)){
-                        animationAmount+=360
-                        status.toggle()
+        VStack {
+            Spacer()
+            Button("Hola 👋") {
+                withAnimation(
+                    Animation.spring()
+                ){enabled.toggle()}
+            }.foregroundColor(.black)
+            .font(.system(size: 40, weight: .bold))
+            Spacer()
+            if enabled {
+                Image(systemName: "touchid")
+                    .resizable()
+                    .foregroundColor(onTouchId ? Color.green : Color.red)
+                    .frame(width: 60, height: 60, alignment: .center)
+                    .onLongPressGesture {
+                        withAnimation(Animation.spring().delay(10)) {
+                            onTouchId.toggle()
+                        }
                     }
-                }, label: {
-                    Image(systemName: "airpodspro")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 150, height: 150, alignment: .center)
-                        .foregroundColor(.white)
-                }).rotation3DEffect(
-                    .degrees(Double(animationAmount)),
-                    axis: (x: 0.0, y: 1.0, z: 0.0)
-            )
-                Text(status ? "AirPods Pro Connected" : "Searching..." )
-                    .foregroundColor(.white)
-                    
+                    .transition(.pivot)
             }
         }
     }
